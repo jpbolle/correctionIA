@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application de Correction</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+            background: #f5f5f5; /* Fond gris neutre au lieu du dégradé mauve */
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .selection-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%); /* Bleu foncé au lieu du bleu clair */
+            z-index: 100;
+            box-shadow: 0 6px 20px rgba(26, 35, 126, 0.3);
+            border-bottom: 4px solid #1a237e;
+            margin: 0;
+            padding: 35px 40px 25px; /* Réduit le padding-bottom */
+            min-height: 140px; /* Hauteur minimum garantie */
+        }
+
+        .selection-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            color: white; /* Labels en blanc pour contraster avec le fond foncé */
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        #pointsTotalFixe {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%) !important;
+            color: white !important;
+            padding: 20px 30px !important;
+            border-radius: 15px !important;
+            text-align: center !important;
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4) !important;
+            min-width: 180px !important;
+            transform: scale(1) !important;
+            transition: transform 0.2s ease !important;
+        }
+
+        #pointsTotalFixe * {
+            color: white !important;
+        }
+
+        #pointsTotalValeur {
+            font-size: 32px !important;
+            font-weight: 700 !important;
+            display: block !important;
+            margin-bottom: 8px !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+            transition: transform 0.2s ease !important;
+            color: white !important;
+        }
+
+        #pointsTotalFixe .points-label {
+            font-size: 13px !important;
+            opacity: 0.9 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            font-weight: 500 !important;
+            color: white !important;
+        }
+
+        .grille-section, .save-section {
+            margin-top: 200px; /* Augmenté de 160px à 200px pour compenser */
+            padding-top: 50px; /* Augmenté de 30px à 50px pour plus d'espace */
+        }
+
+        section {
+            padding: 30px;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            color: #1a73e8;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: 500;
+        }
+
+        .custom-select, .custom-input {
+            padding: 12px 16px;
+            border: 2px solid #dadce0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .custom-input {
+            cursor: text;
+        }
+
+        .custom-select:focus, .custom-input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .custom-select:hover, .custom-input:hover {
+            border-color: #1a73e8;
+        }
+
+        .btn-primary, .btn-success, .btn-secondary, .btn-warning {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1557b0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #dadce0;
+            color: #5f6368;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #34a853;
+            color: white;
+            font-size: 16px;
+            padding: 15px 30px;
+        }
+
+        .btn-success:hover {
+            background: #2d7d2f;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 168, 83, 0.3);
+        }
+
+        .btn-secondary {
+            background: #1565c0;
+            color: white;
+            font-size: 12px;
+            padding: 10px 20px;
+        }
+
+        .btn-secondary:hover {
+            background: #0d47a1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+            font-size: 14px; /* Même taille que les autres boutons */
+            padding: 12px 16px; /* Même padding que les inputs/selects */
+            border-radius: 8px; /* Même border-radius */
+        }
+
+        .btn-warning:hover {
+            background: #f57c00;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+        }
+
+        /* Styles pour l'écran rideau de précorrection */
+        .precorrection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .precorrection-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .precorrection-panel {
+            position: fixed;
+            top: 0;
+            right: -50%;
+            width: 50%;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+            transition: right 0.4s ease;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .precorrection-panel.active {
+            right: 0;
+        }
+
+        .precorrection-header {
+            background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+            color: white;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .precorrection-header h3 {
+            margin: 0;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .close-panel-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .close-panel-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .precorrection-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .copie-eleve-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .copie-eleve-section label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1565c0;
+            font-size: 16px;
+        }
+
+        .copie-eleve-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Georgia', serif;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .copie-eleve-textarea:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
+        }
+
+        .precorrection-actions {
+            display: flex;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn-precorrection {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-precorrection:hover {
+            background: linear-gradient(135deg, #43a047 0%, #5cb85c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-precorrection:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .precorrection-status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .precorrection-status.loading {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+        }
+
+        .precorrection-status.success {
+            background: #e8f5e8;
+            color: #2d7d2f;
+            border: 1px solid #81c784;
+        }
+
+        .precorrection-status.error {
+            background: #fce8e6;
+            color: #d93025;
+            border: 1px solid #f28b82;
+        }
+
+        @media (max-width: 768px) {
+            .precorrection-panel {
+                width: 90%;
+                right: -90%;
+            }
+        }
+
+        .grille-container {
+            display: grid;
+            gap: 25px; /* Augmenté l'espacement entre les critères */
+            padding: 20px 0;
+        }
+
+        .critere-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); /* Fond dégradé bleu-violet pour mise en évidence */
+            border: 2px solid rgba(26, 115, 232, 0.2);
+            border-radius: 16px; /* Coins plus arrondis */
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 15px; /* Marge supplémentaire entre les blocs */
+        }
+
+        .critere-card:hover {
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.15);
+            transform: translateY(-2px);
+            border-color: rgba(26, 115, 232, 0.4);
+        }
+
+        .critere-header {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); /* En-tête avec dégradé bleu */
+            color: white;
+            padding: 25px;
+            border-bottom: none;
+            position: relative;
+        }
+
+        .critere-nom {
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .critere-points {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .critere-score {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a73e8;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 70px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .critere-score.empty {
+            background: rgba(255, 255, 255, 0.7);
+            color: #666;
+        }
+
+        .indicateurs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.7); /* Fond semi-transparent pour les indicateurs */
+        }
+
+        .indicateur-btn {
+            padding: 15px 12px;
+            border: 2px solid #e8eaed;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            text-align: center;
+            line-height: 1.3;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .indicateur-btn:hover {
+            border-color: #1a73e8;
+            background: #f8f9ff;
+        }
+
+        .indicateur-btn.selected.niveau-faible {
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+            transform: scale(1.02);
+        }
+
+        .indicateur-btn.selected.niveau-bon {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+            transform: scale(1.02);
+        }
+
+        .commentaires-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e8eaed;
+        }
+
+        .commentaires-section h3 {
+            margin-bottom: 15px;
+            color: #1a73e8;
+            font-size: 1.1em;
+        }
+
+        .commentaires-section textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dadce0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .commentaires-section textarea:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .save-status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .save-status.success {
+            background: #e8f5e8;
+            color: #2d7d2f;
+            border: 1px solid #81c784;
+        }
+
+        .save-status.error {
+            background: #fce8e6;
+            color: #d93025;
+            border: 1px solid #f28b82;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e8eaed;
+            border-top: 4px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .indicateurs-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            section {
+                padding: 20px;
+            }
+
+            .selection-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Section 1: Sélection -->
+        <section class="selection-section">
+            <div class="selection-content">
+                <div class="control-group">
+                    <label for="eleveInput">Élève:</label>
+                    <input type="text" 
+                           id="eleveInput" 
+                           class="custom-input" 
+                           list="elevesList"
+                           placeholder="Tapez ou sélectionnez un nom..."
+                           autocomplete="off">
+                    <datalist id="elevesList">
+                        <!-- Les options seront ajoutées dynamiquement -->
+                    </datalist>
+                </div>
+                
+                <div class="control-group">
+                    <label for="productionSelect">Type de production:</label>
+                    <select id="productionSelect" class="custom-select">
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
+
+                <!-- Score repositionné tout à droite et en haut -->
+                <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start;">
+                    <div id="pointsTotalFixe" style="display: none; margin-bottom: 15px;">
+                        <span id="pointsTotalValeur">0</span>
+                        <span class="points-label">Points total</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ligne des boutons d'action principaux - NOUVELLE DISPOSITION -->
+            <div style="max-width: 1200px; margin: 15px auto 0; display: flex; justify-content: space-between; align-items: center;">
+                <!-- Groupe gauche: Réinitialisation + Sauvegarder -->
+                <div style="display: flex; gap: 15px;">
+                    <button id="btnReinitialisation" class="btn-warning">
+                        🔄 Réinitialisation
+                    </button>
+                    
+                    <button id="btnSauvegarder" class="btn-warning">
+                        💾 Sauvegarder la correction
+                    </button>
+                </div>
+                
+                <!-- Groupe droite: Précorrection isolée -->
+                <button id="btnPrecorrection" class="btn-warning">
+                    🎯 Précorrection
+                </button>
+            </div>
+        </section>
+
+        <!-- Section 2: Grille de correction -->
+        <section class="grille-section" id="grilleSection" style="display: none;">
+            <div id="grilleContainer"></div>
+            
+            <!-- Zone de commentaires -->
+            <div class="commentaires-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>💬 Commentaires personnalisés</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btnPropositionCommentaire" class="btn-warning">
+                            💡 Proposition d'un commentaire
+                        </button>
+                        <button id="btnAmeliorationCommentaire" class="btn-warning">
+                            ✨ Amélioration du commentaire
+                        </button>
+                    </div>
+                </div>
+                <textarea id="commentairesGeneraux" 
+                         placeholder="Commentaires généraux sur la production de l'élève..."
+                         rows="4"></textarea>
+            </div>
+        </section>
+
+        <!-- Section 3: Enregistrement -->
+        <section class="save-section" id="saveSection" style="display: none;">
+            <!-- Messages persistants d'enregistrement -->
+            <div id="saveStatus" class="save-status"></div>
+        </section>
+    </div>
+
+    <!-- Écran rideau de précorrection IA -->
+    <div id="precorrectionOverlay" class="precorrection-overlay">
+        <div id="precorrectionPanel" class="precorrection-panel">
+            <div class="precorrection-header">
+                <h3>🤖 Précorrection IA</h3>
+                <button class="close-panel-btn" id="closePrecorrectionPanel">×</button>
+            </div>
+            
+            <div class="precorrection-content">
+                <div class="copie-eleve-section">
+                    <label for="copieEleveText">📝 Copie de l'élève à corriger :</label>
+                    <textarea 
+                        id="copieEleveText" 
+                        class="copie-eleve-textarea"
+                        placeholder="Collez ici le texte de la production de l'élève à faire corriger par l'IA...
+
+Exemple : 
+- Rédaction
+- Réponses à des questions
+- Analyse de texte
+- etc."></textarea>
+                </div>
+                
+                <div class="precorrection-actions">
+                    <button id="lancerPrecorrection" class="btn-precorrection">
+                        🚀 Lancer la précorrection IA
+                    </button>
+                </div>
+                
+                <div id="precorrectionStatus" class="precorrection-status" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Chargement en cours...</p>
+        </div>
+    </div>
+
+    <script>
+        let grilleData = null;
+        let corrections = {};
+        let pointsTotal = 0;
+        let elevesData = [];
+        let selectedEleve = '';
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM chargé, initialisation...');
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            console.log('Début initialisation...');
+            
+            try {
+                console.log('Configuration des événements...');
+                setupEventListeners();
+                
+                console.log('🚀 TENTATIVE ULTRA-RAPIDE: Chargement groupé...');
+                showLoading(true);
+                
+                try {
+                    // Tentative de chargement ultra-optimisé
+                    await chargerToutEnUnCoup();
+                    showLoading(false);
+                    
+                    const eleveInput = document.getElementById('eleveInput');
+                    eleveInput.placeholder = "Tapez ou sélectionnez un nom...";
+                    eleveInput.disabled = false;
+                    
+                    showSuccessDiscret('🚀 Chargement ultra-rapide réussi !');
+                    console.log('✅ Initialisation ultra-rapide terminée');
+                    
+                } catch (ultraError) {
+                    console.warn('Chargement ultra-rapide échoué, fallback mode progressif:', ultraError);
+                    
+                    // Fallback vers l'ancien mode progressif
+                    console.log('Chargement des types de production (prioritaire)...');
+                    await chargerTypesProduction();
+                    showLoading(false);
+                    
+                    console.log('Interface prête ! Chargement des élèves en arrière-plan...');
+                    chargerElevesEnArrierePlan();
+                }
+                
+                console.log('Initialisation terminée avec succès');
+                
+            } catch (error) {
+                console.error('Erreur d\'initialisation:', error);
+                showError(`Erreur lors du chargement: ${error.message || error.toString()}`);
+                showLoading(false);
+                
+                try {
+                    console.log('Tentative de chargement simplifié...');
+                    setupEventListeners();
+                    
+                    const productionSelect = document.getElementById('productionSelect');
+                    
+                    if (productionSelect.children.length <= 1) {
+                        productionSelect.innerHTML = `
+                            <option value="">Sélectionner un type</option>
+                            <option value="Test Production">Test Production</option>
+                        `;
+                    }
+                    
+                    showError('Mode de test activé - fonctionnalités limitées');
+                } catch (fallbackError) {
+                    console.error('Échec du chargement simplifié:', fallbackError);
+                    showError('Impossible de charger l\'application. Veuillez rafraîchir la page.');
+                }
+            }
+        }
+
+        async function chargerElevesEnArrierePlan() {
+            const eleveInput = document.getElementById('eleveInput');
+            
+            try {
+                // Indiquer que le chargement est en cours
+                eleveInput.placeholder = "⏳ Chargement des élèves...";
+                eleveInput.disabled = true;
+                
+                console.log('Chargement des élèves en arrière-plan...');
+                await chargerEleves();
+                
+                // Succès
+                eleveInput.placeholder = "Tapez ou sélectionnez un nom...";
+                eleveInput.disabled = false;
+                console.log('Élèves chargés avec succès en arrière-plan');
+                
+                // Notification discrète
+                showSuccessDiscret('✅ Liste des élèves chargée');
+                
+            } catch (error) {
+                console.error('Erreur chargement élèves en arrière-plan:', error);
+                
+                // L'application continue de fonctionner
+                eleveInput.placeholder = "⚠️ Tapez manuellement le nom de l'élève";
+                eleveInput.disabled = false;
+                
+                // Notification discrète d'erreur
+                showSuccessDiscret('⚠️ Mode manuel pour les noms d\'élèves');
+            }
+        }
+
+        function setupEventListeners() {
+            const eleveInput = document.getElementById('eleveInput');
+            const productionSelect = document.getElementById('productionSelect');
+            const btnReinitialisation = document.getElementById('btnReinitialisation');
+            const btnSauvegarder = document.getElementById('btnSauvegarder');
+            const btnPrecorrection = document.getElementById('btnPrecorrection');
+            const btnPropositionCommentaire = document.getElementById('btnPropositionCommentaire');
+            const btnAmeliorationCommentaire = document.getElementById('btnAmeliorationCommentaire');
+            
+            // Éléments du panneau de précorrection
+            const precorrectionOverlay = document.getElementById('precorrectionOverlay');
+            const precorrectionPanel = document.getElementById('precorrectionPanel');
+            const closePrecorrectionPanel = document.getElementById('closePrecorrectionPanel');
+            const lancerPrecorrection = document.getElementById('lancerPrecorrection');
+            
+            function checkAndLoadGrid() {
+                const productionSelected = productionSelect.value !== '';
+                selectedEleve = eleveInput.value.trim();
+                
+                if (productionSelected) {
+                    chargerGrilleCorrection();
+                }
+            }
+            
+            eleveInput.addEventListener('input', function() {
+                selectedEleve = this.value.trim();
+            });
+            
+            productionSelect.addEventListener('change', checkAndLoadGrid);
+            
+            // ✅ NOUVEAU : Bouton Réinitialisation
+            btnReinitialisation.addEventListener('click', function() {
+                // Effet de pression visuel
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+                
+                // Confirmation avant réinitialisation
+                if (confirm('Êtes-vous sûr de vouloir tout réinitialiser ? Toutes les données non sauvegardées seront perdues.')) {
+                    reinitialiserComplet();
+                }
+            });
+            
+            // ✅ MODIFIÉ : Bouton dynamique Sauvegarder/Nouvelle correction
+            btnSauvegarder.addEventListener('click', function() {
+                // Effet de pression visuel
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+                
+                const texteActuel = this.textContent.trim();
+                
+                if (texteActuel.includes('Sauvegarder')) {
+                    // Mode SAUVEGARDE
+                    const hasCorrections = Object.values(corrections).some(c => c.selected !== null);
+                    if (!hasCorrections) {
+                        showError('Veuillez effectuer au moins une correction avant de sauvegarder');
+                        return;
+                    }
+                    enregistrerCorrection();
+                    
+                } else {
+                    // Mode NOUVELLE CORRECTION
+                    reinitialiserComplet();
+                }
+            });
+            
+            // Gestion du panneau de précorrection
+            btnPrecorrection.addEventListener('click', function() {
+                // Vérifier que la grille est chargée
+                if (!grilleData) {
+                    showError('Veuillez d\'abord sélectionner un type de production');
+                    return;
+                }
+                
+                // Effet de pression visuel
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+                
+                // Ouvrir le panneau
+                ouvrirPanneauPrecorrection();
+            });
+            
+            // Fermeture du panneau
+            closePrecorrectionPanel.addEventListener('click', fermerPanneauPrecorrection);
+            precorrectionOverlay.addEventListener('click', function(e) {
+                if (e.target === precorrectionOverlay) {
+                    fermerPanneauPrecorrection();
+                }
+            });
+            
+            // Lancement de la précorrection IA
+            lancerPrecorrection.addEventListener('click', async function() {
+                const copieTexte = document.getElementById('copieEleveText').value.trim();
+                
+                if (!copieTexte) {
+                    afficherStatusPrecorrection('Veuillez saisir le texte de la copie de l\'élève', 'error');
+                    return;
+                }
+                
+                await executerPrecorrectionIA(copieTexte);
+            });
+            
+            btnPropositionCommentaire.addEventListener('click', function() {
+                // Effet de pression visuel
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+                // TODO: Ajouter la fonctionnalité de proposition de commentaire
+                console.log('Bouton Proposition commentaire cliqué - fonctionnalité à implémenter');
+            });
+            
+            btnAmeliorationCommentaire.addEventListener('click', function() {
+                // Effet de pression visuel
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+                // TODO: Ajouter la fonctionnalité d'amélioration de commentaire
+                console.log('Bouton Amélioration commentaire cliqué - fonctionnalité à implémenter');
+            });
+        }
+
+        async function chargerEleves() {
+            try {
+                const eleves = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getEleves();
+                });
+                
+                elevesData = eleves;
+                
+                const datalist = document.getElementById('elevesList');
+                datalist.innerHTML = '';
+                
+                eleves.forEach(eleve => {
+                    const option = document.createElement('option');
+                    option.value = eleve.nom;
+                    datalist.appendChild(option);
+                });
+                
+                console.log(`${eleves.length} élèves chargés dans le datalist`);
+            } catch (error) {
+                console.error('Erreur chargement élèves:', error);
+                throw error;
+            }
+        }
+
+        async function chargerTypesProduction() {
+            try {
+                const types = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getTypesProduction();
+                });
+                
+                const select = document.getElementById('productionSelect');
+                select.innerHTML = '<option value="">Sélectionner un type</option>';
+                
+                types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    select.appendChild(option);
+                });
+                
+                console.log(`${types.length} types de production chargés`);
+            } catch (error) {
+                console.error('Erreur chargement types:', error);
+                throw error;
+            }
+        }
+
+        // 🚀 BONUS: Fonction ultra-optimisée pour charger tout en un coup
+        async function chargerToutEnUnCoup() {
+            try {
+                const donnees = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getElevesEtTypes(); // Nouvelle fonction backend !
+                });
+                
+                if (donnees.success) {
+                    // 1. Charger les types de production
+                    const select = document.getElementById('productionSelect');
+                    select.innerHTML = '<option value="">Sélectionner un type</option>';
+                    donnees.typesProduction.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        select.appendChild(option);
+                    });
+                    
+                    // 2. Charger les élèves
+                    elevesData = donnees.eleves;
+                    const datalist = document.getElementById('elevesList');
+                    datalist.innerHTML = '';
+                    donnees.eleves.forEach(eleve => {
+                        const option = document.createElement('option');
+                        option.value = eleve.nom;
+                        datalist.appendChild(option);
+                    });
+                    
+                    console.log(`✅ ULTRA-RAPIDE: ${donnees.eleves.length} élèves + ${donnees.typesProduction.length} types chargés en 1 appel !`);
+                    return true;
+                } else {
+                    throw new Error(donnees.error || 'Échec du chargement groupé');
+                }
+            } catch (error) {
+                console.error('Erreur chargement groupé:', error);
+                throw error;
+            }
+        }
+
+        async function chargerGrilleCorrection() {
+            const typeProduction = document.getElementById('productionSelect').value;
+            if (!typeProduction) return;
+            
+            showLoading(true);
+            
+            try {
+                grilleData = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getGrilleCorrection(typeProduction);
+                });
+                
+                if (grilleData) {
+                    afficherGrille();
+                    document.getElementById('grilleSection').style.display = 'block';
+                    document.getElementById('saveSection').style.display = 'block';
+                } else {
+                    showError('Impossible de charger la grille de correction');
+                }
+            } catch (error) {
+                console.error('Erreur chargement grille:', error);
+                showError('Erreur lors du chargement de la grille');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function afficherGrille() {
+            const container = document.getElementById('grilleContainer');
+            container.innerHTML = '';
+            corrections = {};
+            
+            grilleData.criteres.forEach((critere, critereIndex) => {
+                const critereCard = document.createElement('div');
+                critereCard.className = 'critere-card';
+                
+                const scoreIndicator = document.createElement('div');
+                scoreIndicator.className = 'critere-score empty';
+                scoreIndicator.textContent = '0/' + critere.points;
+                scoreIndicator.id = `score-${critereIndex}`;
+                
+                const header = document.createElement('div');
+                header.className = 'critere-header';
+                header.innerHTML = `
+                    <div class="critere-nom">${critere.nom}</div>
+                    <div class="critere-points">Maximum: ${critere.points} points</div>
+                `;
+                header.appendChild(scoreIndicator);
+                
+                const indicateursGrid = document.createElement('div');
+                indicateursGrid.className = 'indicateurs-grid';
+                
+                const pourcentagesParColonne = [0, 15, 35, 60, 80, 100];
+                
+                critere.indicateurs.forEach((indicateur, indicateurIndex) => {
+                    if (indicateur && indicateur.toString().trim() !== '') {
+                        const btn = document.createElement('button');
+                        btn.className = 'indicateur-btn';
+                        btn.textContent = indicateur.toString().trim();
+                        
+                        const pourcentage = pourcentagesParColonne[indicateurIndex] || 0;
+                        const pointsCalcules = (critere.points * pourcentage / 100);
+                        
+                        const niveaux = ['Néant', 'Très insuffisant', 'Insuffisant', 'Suffisant', 'Acquis', 'Parfaitement acquis'];
+                        const nomNiveau = niveaux[indicateurIndex] || 'Inconnu';
+                        
+                        btn.title = `${nomNiveau}: ${indicateur} (${pourcentage}% = ${pointsCalcules.toFixed(1)} pts)`;
+                        btn.onclick = () => selectionnerIndicateur(critereIndex, indicateurIndex, btn, critere.points, pourcentage, indicateur);
+                        
+                        indicateursGrid.appendChild(btn);
+                    }
+                });
+                
+                critereCard.appendChild(header);
+                critereCard.appendChild(indicateursGrid);
+                container.appendChild(critereCard);
+                
+                corrections[critereIndex] = {
+                    selected: null,
+                    indicateur: '',
+                    points: 0,
+                    pointsMax: critere.points
+                };
+            });
+            
+            mettreAJourPointsTotal();
+        }
+
+        function selectionnerIndicateur(critereIndex, indicateurIndex, btn, pointsMax, pourcentage, indicateurTexte) {
+            const indicateursGrid = btn.parentNode;
+            
+            // Vérifier si ce bouton est déjà sélectionné
+            const dejaSelectionne = btn.classList.contains('selected');
+            
+            // Désélectionner tous les boutons de ce critère
+            indicateursGrid.querySelectorAll('.indicateur-btn').forEach(b => {
+                b.classList.remove('selected', 'niveau-faible', 'niveau-bon');
+            });
+            
+            if (dejaSelectionne) {
+                // ✅ DÉSÉLECTION : Re-cliquer sur le même bouton = désélectionner
+                corrections[critereIndex] = {
+                    selected: null,
+                    indicateur: '',
+                    points: 0,
+                    pointsMax: pointsMax
+                };
+                
+                // Remettre le score à 0
+                const scoreIndicator = document.getElementById(`score-${critereIndex}`);
+                scoreIndicator.textContent = `0/${pointsMax}`;
+                scoreIndicator.classList.add('empty');
+                
+                console.log(`Critère ${critereIndex} désélectionné`);
+                
+            } else {
+                // ✅ SÉLECTION NORMALE : Nouveau bouton cliqué
+                btn.classList.add('selected');
+                
+                if (pourcentage < 50) {
+                    btn.classList.add('niveau-faible');
+                } else {
+                    btn.classList.add('niveau-bon');
+                }
+                
+                const pointsObtenus = (pointsMax * pourcentage / 100);
+                
+                corrections[critereIndex] = {
+                    selected: indicateurIndex,
+                    indicateur: indicateurTexte,
+                    points: pointsObtenus,
+                    pointsMax: pointsMax,
+                    pourcentage: pourcentage
+                };
+                
+                // Mettre à jour le score affiché
+                const scoreIndicator = document.getElementById(`score-${critereIndex}`);
+                scoreIndicator.textContent = `${pointsObtenus.toFixed(1)}/${pointsMax}`;
+                scoreIndicator.classList.remove('empty');
+                
+                // Effet de pression
+                btn.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    btn.style.transform = 'scale(1.02)';
+                }, 150);
+                
+                console.log(`Critère ${critereIndex} sélectionné: ${indicateurTexte}`);
+            }
+            
+            // Mettre à jour le total dans tous les cas
+            mettreAJourPointsTotal();
+        }
+
+        function mettreAJourPointsTotal() {
+            pointsTotal = 0;
+            let pointsMaxTotal = 0;
+            
+            Object.values(corrections).forEach(correction => {
+                if (correction.selected !== null) {
+                    // Critère coté : ajouter les points obtenus ET le maximum de ce critère
+                    pointsTotal += correction.points;
+                    pointsMaxTotal += correction.pointsMax;
+                }
+                // Si pas coté (selected === null), on ignore complètement ce critère
+            });
+            
+            const pointsFormate = pointsTotal.toFixed(1);
+            
+            const pointsTotalValeur = document.getElementById('pointsTotalValeur');
+            const pointsTotalFixe = document.getElementById('pointsTotalFixe');
+            
+            if (pointsTotalValeur && pointsTotalFixe) {
+                pointsTotalValeur.textContent = `${pointsFormate} / ${pointsMaxTotal}`;
+                pointsTotalFixe.style.display = 'block';
+                
+                pointsTotalValeur.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    pointsTotalValeur.style.transform = 'scale(1)';
+                }, 200);
+            }
+            
+            console.log('Points total mis à jour:', pointsFormate, '/', pointsMaxTotal, '(critères cotés seulement)');
+        }
+
+        async function enregistrerCorrection() {
+            const typeProduction = document.getElementById('productionSelect').value;
+            const commentairesGeneraux = document.getElementById('commentairesGeneraux').value;
+            
+            if (!typeProduction) {
+                showError('Veuillez sélectionner un type de production');
+                return;
+            }
+            
+            const hasCorrections = Object.values(corrections).some(c => c.selected !== null);
+            if (!hasCorrections) {
+                showError('Veuillez effectuer au moins une correction');
+                return;
+            }
+            
+            if (!selectedEleve) {
+                const confirmation = prompt('Aucun élève sélectionné. Entrez un nom pour le fichier de correction:');
+                if (!confirmation || confirmation.trim() === '') {
+                    showError('Correction annulée - nom requis');
+                    return;
+                }
+                selectedEleve = confirmation.trim();
+            }
+            
+            const correctionsFinales = {
+                ...corrections,
+                commentairesGeneraux: commentairesGeneraux,
+                dateCorrection: new Date().toISOString()
+            };
+            
+            showLoading(true);
+            
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .enregistrerCorrection(selectedEleve, typeProduction, correctionsFinales, pointsTotal);
+                });
+                
+                if (result.success) {
+                    // ✅ Message persistant sous la grille
+                    showSuccessPersistant(`${result.message}<br><a href="${result.url}" target="_blank" style="color: #1a73e8; text-decoration: none;">📄 Ouvrir le fichier de correction</a>`);
+                    
+                    // ✅ CHANGER LE BOUTON : Sauvegarder → Nouvelle correction
+                    changerBoutonVersNouvelleCorrection();
+                } else {
+                    showErrorPersistant(result.message || 'Erreur lors de l\'enregistrement');
+                }
+            } catch (error) {
+                console.error('Erreur enregistrement:', error);
+                showErrorPersistant('Erreur lors de l\'enregistrement de la correction');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ✅ NOUVELLE FONCTION : Changer le bouton après sauvegarde
+        function changerBoutonVersNouvelleCorrection() {
+            const btnSauvegarder = document.getElementById('btnSauvegarder');
+            btnSauvegarder.innerHTML = '🔄 Nouvelle correction';
+            
+            // Effet visuel pour indiquer le changement
+            btnSauvegarder.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                btnSauvegarder.style.transform = 'scale(1)';
+            }, 300);
+        }
+
+        // ✅ NOUVELLE FONCTION : Remettre le bouton en mode Sauvegarder
+        function changerBoutonVersSauvegarder() {
+            const btnSauvegarder = document.getElementById('btnSauvegarder');
+            btnSauvegarder.innerHTML = '💾 Sauvegarder la correction';
+        }
+
+        // ✅ NOUVELLE FONCTION : Réinitialisation complète
+        function reinitialiserComplet() {
+            // Réinitialiser les inputs
+            document.getElementById('eleveInput').value = '';
+            document.getElementById('productionSelect').value = '';
+            document.getElementById('commentairesGeneraux').value = '';
+            
+            // Réinitialiser le panneau de précorrection
+            document.getElementById('copieEleveText').value = '';
+            fermerPanneauPrecorrection();
+            masquerStatusPrecorrection();
+            
+            selectedEleve = '';
+            
+            // Masquer les sections
+            document.getElementById('grilleSection').style.display = 'none';
+            document.getElementById('saveSection').style.display = 'none';
+            
+            // Réinitialiser l'affichage du total
+            document.getElementById('pointsTotalFixe').style.display = 'none';
+            document.getElementById('pointsTotalValeur').textContent = '0';
+            
+            // Réinitialiser les données
+            grilleData = null;
+            corrections = {};
+            pointsTotal = 0;
+            
+            // Nettoyer les messages
+            document.getElementById('saveStatus').innerHTML = '';
+            document.getElementById('saveStatus').className = 'save-status';
+            
+            // ✅ REMETTRE LE BOUTON EN MODE SAUVEGARDE
+            changerBoutonVersSauvegarder();
+            
+            showSuccessDiscret('🔄 Réinitialisation complète effectuée');
+        }
+
+        // ✅ NOUVELLES FONCTIONS : Messages persistants
+        function showSuccessPersistant(message) {
+            const status = document.getElementById('saveStatus');
+            status.className = 'save-status success';
+            status.innerHTML = `✅ ${message}`;
+            status.style.display = 'block';
+            // Pas de setTimeout = message persistant !
+        }
+
+        function showErrorPersistant(message) {
+            const status = document.getElementById('saveStatus');
+            status.className = 'save-status error';
+            status.innerHTML = `❌ ${message}`;
+            status.style.display = 'block';
+            // Pas de setTimeout = message persistant !
+        }
+
+        function autoSauvegarde() {
+            // Cette fonction est maintenant vide car on n'utilise plus les brouillons
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function showError(message) {
+            const status = document.getElementById('saveStatus');
+            status.className = 'save-status error';
+            status.innerHTML = `❌ ${message}`;
+            
+            setTimeout(() => {
+                status.innerHTML = '';
+                status.className = 'save-status';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const status = document.getElementById('saveStatus');
+            status.className = 'save-status success';
+            status.innerHTML = `✅ ${message}`;
+            
+            setTimeout(() => {
+                status.innerHTML = '';
+                status.className = 'save-status';
+            }, 5000);
+        }
+
+        function showSuccessDiscret(message) {
+            const status = document.getElementById('saveStatus');
+            const originalDisplay = status.style.display;
+            
+            status.className = 'save-status success';
+            status.innerHTML = message;
+            status.style.display = 'block';
+            
+            // Disparaît après 3 secondes (plus discret)
+            setTimeout(() => {
+                status.innerHTML = '';
+                status.className = 'save-status';
+                status.style.display = originalDisplay;
+            }, 3000);
+        }
+
+        // ===================================
+        // FONCTIONS DE PRÉCORRECTION IA
+        // ===================================
+
+        function ouvrirPanneauPrecorrection() {
+            const overlay = document.getElementById('precorrectionOverlay');
+            const panel = document.getElementById('precorrectionPanel');
+            
+            overlay.classList.add('active');
+            panel.classList.add('active');
+            
+            // Focus sur le textarea
+            setTimeout(() => {
+                document.getElementById('copieEleveText').focus();
+            }, 400);
+        }
+
+        function fermerPanneauPrecorrection() {
+            const overlay = document.getElementById('precorrectionOverlay');
+            const panel = document.getElementById('precorrectionPanel');
+            
+            panel.classList.remove('active');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 300);
+        }
+
+        function afficherStatusPrecorrection(message, type = 'loading') {
+            const status = document.getElementById('precorrectionStatus');
+            status.className = `precorrection-status ${type}`;
+            status.innerHTML = message;
+            status.style.display = 'block';
+        }
+
+        function masquerStatusPrecorrection() {
+            const status = document.getElementById('precorrectionStatus');
+            status.style.display = 'none';
+        }
+
+        async function executerPrecorrectionIA(copieTexte) {
+            const btnLancer = document.getElementById('lancerPrecorrection');
+            const typeProduction = document.getElementById('productionSelect').value;
+            
+            try {
+                // Désactiver le bouton et afficher le status
+                btnLancer.disabled = true;
+                afficherStatusPrecorrection('🤖 L\'IA analyse la copie...', 'loading');
+                
+                console.log('Envoi de la copie à l\'IA pour précorrection...');
+                
+                // Appel vers Google Apps Script
+                const resultatIA = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .precorrectionIA(typeProduction, grilleData, copieTexte);
+                });
+                
+                if (resultatIA.success) {
+                    afficherStatusPrecorrection('✅ Précorrection terminée ! Application en cours...', 'success');
+                    
+                    // Appliquer les corrections à la grille
+                    appliquerCorrectionsIA(resultatIA.corrections);
+                    
+                    // Appliquer le commentaire final
+                    if (resultatIA.commentaire_final) {
+                        document.getElementById('commentairesGeneraux').value = resultatIA.commentaire_final;
+                    }
+                    
+                    // Fermer le panneau après 2 secondes
+                    setTimeout(() => {
+                        fermerPanneauPrecorrection();
+                        showSuccessDiscret('🤖 Précorrection IA appliquée avec succès !');
+                    }, 2000);
+                    
+                } else {
+                    afficherStatusPrecorrection(`❌ Erreur: ${resultatIA.message}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erreur précorrection IA:', error);
+                afficherStatusPrecorrection('❌ Erreur de communication avec l\'IA', 'error');
+            } finally {
+                // Réactiver le bouton
+                btnLancer.disabled = false;
+            }
+        }
+
+        function appliquerCorrectionsIA(correctionsIA) {
+            console.log('Application des corrections IA:', correctionsIA);
+            
+            // Réinitialiser les corrections actuelles
+            Object.keys(corrections).forEach(critereIndex => {
+                corrections[critereIndex] = {
+                    selected: null,
+                    indicateur: '',
+                    points: 0,
+                    pointsMax: corrections[critereIndex].pointsMax
+                };
+            });
+            
+            // Appliquer chaque correction de l'IA
+            Object.keys(correctionsIA).forEach(critereIndex => {
+                const correctionIA = correctionsIA[critereIndex];
+                const critere = grilleData.criteres[parseInt(critereIndex)];
+                
+                if (critere && correctionIA.indicateur) {
+                    // Trouver l'indicateur correspondant
+                    const indicateurIndex = critere.indicateurs.findIndex(ind => 
+                        ind && ind.toString().trim() === correctionIA.indicateur.toString().trim()
+                    );
+                    
+                    if (indicateurIndex !== -1) {
+                        // Calculer les points selon le pourcentage
+                        const pointsObtenus = (critere.points * correctionIA.pourcentage / 100);
+                        
+                        // Mettre à jour les corrections
+                        corrections[critereIndex] = {
+                            selected: indicateurIndex,
+                            indicateur: correctionIA.indicateur,
+                            points: pointsObtenus,
+                            pointsMax: critere.points,
+                            pourcentage: correctionIA.pourcentage,
+                            justificationIA: correctionIA.justification
+                        };
+                        
+                        // Mettre à jour visuellement la grille
+                        const critereCard = document.querySelector(`#score-${critereIndex}`).closest('.critere-card');
+                        if (critereCard) {
+                            // Désélectionner tous les boutons de ce critère
+                            critereCard.querySelectorAll('.indicateur-btn').forEach(btn => {
+                                btn.classList.remove('selected', 'niveau-faible', 'niveau-bon');
+                            });
+                            
+                            // Sélectionner le bon bouton
+                            const indicateurBtns = critereCard.querySelectorAll('.indicateur-btn');
+                            if (indicateurBtns[indicateurIndex]) {
+                                const btn = indicateurBtns[indicateurIndex];
+                                btn.classList.add('selected');
+                                
+                                if (correctionIA.pourcentage < 50) {
+                                    btn.classList.add('niveau-faible');
+                                } else {
+                                    btn.classList.add('niveau-bon');
+                                }
+                                
+                                // Ajouter la justification en tooltip
+                                btn.title = `${btn.title}\n\n🤖 IA: ${correctionIA.justification}`;
+                            }
+                            
+                            // Mettre à jour le score affiché
+                            const scoreIndicator = document.getElementById(`score-${critereIndex}`);
+                            scoreIndicator.textContent = `${pointsObtenus.toFixed(1)}/${critere.points}`;
+                            scoreIndicator.classList.remove('empty');
+                        }
+                    }
+                }
+            });
+            
+            // Mettre à jour le total
+            mettreAJourPointsTotal();
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+            }
+            
+            if (event.ctrlKey && event.key === 'Enter') {
+                event.preventDefault();
+                enregistrerCorrection();
+            }
+            
+            if (event.key === 'Escape') {
+                if (confirm('Voulez-vous réinitialiser la correction en cours ?')) {
+                    reinitialiserCorrection();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
