@@ -805,7 +805,8 @@ Exemple :
         </div>
     </div>
 
-    <script>
+
+<script>
         let grilleData = null;
         let corrections = {};
         let pointsTotal = 0;
@@ -819,17 +820,16 @@ Exemple :
         });
 
         async function initializeApp() {
-            console.log('Début initialisation...');
+            console.log('🚀 === DÉBUT INITIALISATION ===');
             
             try {
                 console.log('Configuration des événements...');
                 setupEventListeners();
                 
-                console.log('🚀 TENTATIVE ULTRA-RAPIDE: Chargement groupé...');
+                console.log('🔄 Tentative de chargement ultra-rapide...');
                 showLoading(true);
                 
                 try {
-                    // Tentative de chargement ultra-optimisé
                     await chargerToutEnUnCoup();
                     showLoading(false);
                     
@@ -841,26 +841,32 @@ Exemple :
                     console.log('✅ Initialisation ultra-rapide terminée');
                     
                 } catch (ultraError) {
-                    console.warn('Chargement ultra-rapide échoué, fallback mode progressif:', ultraError);
+                    console.warn('⚠️ Chargement ultra-rapide échoué, mode progressif:', ultraError);
                     
-                    // Fallback vers l'ancien mode progressif
-                    console.log('Chargement des types de production (prioritaire)...');
+                    console.log('🔄 Chargement des types de production (prioritaire)...');
                     await chargerTypesProduction();
                     showLoading(false);
                     
-                    console.log('Interface prête ! Chargement des élèves en arrière-plan...');
+                    console.log('✅ Interface prête ! Chargement des élèves en arrière-plan...');
                     chargerElevesEnArrierePlan();
                 }
                 
-                console.log('Initialisation terminée avec succès');
+                console.log('🎉 Initialisation terminée avec succès');
                 
             } catch (error) {
-                console.error('Erreur d\'initialisation:', error);
-                showError(`Erreur lors du chargement: ${error.message || error.toString()}`);
+                console.error('❌ Erreur d\'initialisation critique:', error);
                 showLoading(false);
                 
+                let messageErreur = `Erreur lors du chargement: ${error.message || error.toString()}`;
+                
+                if (error.diagnostic) {
+                    messageErreur += `\n\nDiagnostic: ${JSON.stringify(error.diagnostic, null, 2)}`;
+                }
+                
+                showError(messageErreur);
+                
                 try {
-                    console.log('Tentative de chargement simplifié...');
+                    console.log('🔧 Tentative de chargement simplifié...');
                     setupEventListeners();
                     
                     const productionSelect = document.getElementById('productionSelect');
@@ -874,7 +880,7 @@ Exemple :
                     
                     showError('Mode de test activé - fonctionnalités limitées');
                 } catch (fallbackError) {
-                    console.error('Échec du chargement simplifié:', fallbackError);
+                    console.error('❌ Échec du chargement simplifié:', fallbackError);
                     showError('Impossible de charger l\'application. Veuillez rafraîchir la page.');
                 }
             }
@@ -884,30 +890,197 @@ Exemple :
             const eleveInput = document.getElementById('eleveInput');
             
             try {
-                // Indiquer que le chargement est en cours
                 eleveInput.placeholder = "⏳ Chargement des élèves...";
                 eleveInput.disabled = true;
                 
-                console.log('Chargement des élèves en arrière-plan...');
+                console.log('🔄 Chargement des élèves en arrière-plan...');
                 await chargerEleves();
                 
-                // Succès
                 eleveInput.placeholder = "Tapez ou sélectionnez un nom...";
                 eleveInput.disabled = false;
-                console.log('Élèves chargés avec succès en arrière-plan');
+                console.log('✅ Élèves chargés avec succès en arrière-plan');
                 
-                // Notification discrète
-                showSuccessDiscret('✅ Liste des élèves chargée');
+                showSuccessDiscret(`✅ ${elevesData.length} élèves chargés`);
                 
             } catch (error) {
-                console.error('Erreur chargement élèves en arrière-plan:', error);
+                console.error('❌ Erreur chargement élèves en arrière-plan:', error);
                 
-                // L'application continue de fonctionner
                 eleveInput.placeholder = "⚠️ Tapez manuellement le nom de l'élève";
                 eleveInput.disabled = false;
                 
-                // Notification discrète d'erreur
-                showSuccessDiscret('⚠️ Mode manuel pour les noms d\'élèves');
+                let message = '⚠️ Mode manuel pour les noms d\'élèves';
+                if (error.message && error.message.includes('dataEleves')) {
+                    message = '⚠️ Feuille "dataEleves" manquante - mode manuel activé';
+                }
+                
+                showSuccessDiscret(message);
+            }
+        }
+
+        async function chargerEleves() {
+            try {
+                console.log('📞 Appel backend: getEleves()');
+                
+                const eleves = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getEleves();
+                });
+                
+                console.log('📨 Réponse backend élèves:', eleves);
+                
+                if (!Array.isArray(eleves)) {
+                    throw new Error('Réponse backend invalide: pas un tableau');
+                }
+                
+                elevesData = eleves;
+                
+                const datalist = document.getElementById('elevesList');
+                datalist.innerHTML = '';
+                
+                let elevesAjoutes = 0;
+                eleves.forEach(eleve => {
+                    if (eleve && eleve.nom && eleve.nom.trim() !== '') {
+                        const option = document.createElement('option');
+                        option.value = eleve.nom.trim();
+                        datalist.appendChild(option);
+                        elevesAjoutes++;
+                    }
+                });
+                
+                console.log(`✅ ${elevesAjoutes} élèves ajoutés au datalist`);
+                
+                if (elevesAjoutes === 0) {
+                    throw new Error('Aucun élève valide trouvé dans les données');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur chargement élèves:', error);
+                throw error;
+            }
+        }
+
+        async function chargerTypesProduction() {
+            try {
+                console.log('📞 Appel backend: getTypesProduction()');
+                
+                const types = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getTypesProduction();
+                });
+                
+                console.log('📨 Réponse backend types:', types);
+                
+                if (!Array.isArray(types)) {
+                    throw new Error('Réponse backend invalide pour les types');
+                }
+                
+                const select = document.getElementById('productionSelect');
+                select.innerHTML = '<option value="">Sélectionner un type</option>';
+                
+                types.forEach(type => {
+                    if (type && type.trim() !== '') {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        select.appendChild(option);
+                    }
+                });
+                
+                console.log(`✅ ${types.length} types de production chargés`);
+                
+            } catch (error) {
+                console.error('❌ Erreur chargement types:', error);
+                throw error;
+            }
+        }
+
+        async function chargerToutEnUnCoup() {
+            try {
+                console.log('📞 Appel backend: getElevesEtTypes()');
+                
+                const donnees = await new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .getElevesEtTypes();
+                });
+                
+                console.log('📨 Réponse backend complète:', donnees);
+                
+                if (!donnees) {
+                    throw new Error('Aucune réponse du backend');
+                }
+                
+                if (!donnees.success) {
+                    console.error('❌ Échec backend:', donnees.error);
+                    
+                    if (donnees.diagnostic) {
+                        console.log('🔍 Diagnostic disponible:', donnees.diagnostic);
+                        
+                        if (donnees.diagnostic.feuillesDisponibles) {
+                            console.log('📋 Feuilles disponibles:', donnees.diagnostic.feuillesDisponibles);
+                        }
+                    }
+                    
+                    throw new Error(donnees.error || 'Erreur backend inconnue');
+                }
+                
+                if (!Array.isArray(donnees.eleves) || !Array.isArray(donnees.typesProduction)) {
+                    throw new Error('Structure de données backend invalide');
+                }
+                
+                // 1. Charger les types de production
+                const select = document.getElementById('productionSelect');
+                select.innerHTML = '<option value="">Sélectionner un type</option>';
+                
+                let typesAjoutes = 0;
+                donnees.typesProduction.forEach(type => {
+                    if (type && type.trim() !== '') {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        select.appendChild(option);
+                        typesAjoutes++;
+                    }
+                });
+                
+                console.log(`✅ ${typesAjoutes} types de production chargés`);
+                
+                // 2. Charger les élèves
+                elevesData = donnees.eleves;
+                const datalist = document.getElementById('elevesList');
+                datalist.innerHTML = '';
+                
+                let elevesAjoutes = 0;
+                donnees.eleves.forEach(eleve => {
+                    if (eleve && eleve.nom && eleve.nom.trim() !== '') {
+                        const option = document.createElement('option');
+                        option.value = eleve.nom.trim();
+                        datalist.appendChild(option);
+                        elevesAjoutes++;
+                    }
+                });
+                
+                console.log(`✅ ${elevesAjoutes} élèves chargés`);
+                
+                if (typesAjoutes === 0) {
+                    throw new Error('Aucun type de production trouvé');
+                }
+                
+                if (elevesAjoutes === 0) {
+                    console.warn('⚠️ Aucun élève trouvé, mais on continue...');
+                }
+                
+                console.log(`🎉 Chargement groupé réussi: ${elevesAjoutes} élèves + ${typesAjoutes} types`);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erreur chargement groupé:', error);
+                throw error;
             }
         }
 
@@ -920,7 +1093,6 @@ Exemple :
             const btnPropositionCommentaire = document.getElementById('btnPropositionCommentaire');
             const btnAmeliorationCommentaire = document.getElementById('btnAmeliorationCommentaire');
             
-            // Éléments du panneau de précorrection
             const precorrectionOverlay = document.getElementById('precorrectionOverlay');
             const precorrectionPanel = document.getElementById('precorrectionPanel');
             const closePrecorrectionPanel = document.getElementById('closePrecorrectionPanel');
@@ -941,23 +1113,18 @@ Exemple :
             
             productionSelect.addEventListener('change', checkAndLoadGrid);
             
-            // ✅ NOUVEAU : Bouton Réinitialisation
             btnReinitialisation.addEventListener('click', function() {
-                // Effet de pression visuel
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = 'scale(1)';
                 }, 150);
                 
-                // Confirmation avant réinitialisation
                 if (confirm('Êtes-vous sûr de vouloir tout réinitialiser ? Toutes les données non sauvegardées seront perdues.')) {
                     reinitialiserComplet();
                 }
             });
             
-            // ✅ MODIFIÉ : Bouton dynamique Sauvegarder/Nouvelle correction
             btnSauvegarder.addEventListener('click', function() {
-                // Effet de pression visuel
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = 'scale(1)';
@@ -966,39 +1133,31 @@ Exemple :
                 const texteActuel = this.textContent.trim();
                 
                 if (texteActuel.includes('Sauvegarder')) {
-                    // Mode SAUVEGARDE
                     const hasCorrections = Object.values(corrections).some(c => c.selected !== null);
                     if (!hasCorrections) {
                         showError('Veuillez effectuer au moins une correction avant de sauvegarder');
                         return;
                     }
                     enregistrerCorrection();
-                    
                 } else {
-                    // Mode NOUVELLE CORRECTION
                     reinitialiserComplet();
                 }
             });
             
-            // Gestion du panneau de précorrection
             btnPrecorrection.addEventListener('click', function() {
-                // Vérifier que la grille est chargée
                 if (!grilleData) {
                     showError('Veuillez d\'abord sélectionner un type de production');
                     return;
                 }
                 
-                // Effet de pression visuel
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = 'scale(1)';
                 }, 150);
                 
-                // Ouvrir le panneau
                 ouvrirPanneauPrecorrection();
             });
             
-            // Fermeture du panneau
             closePrecorrectionPanel.addEventListener('click', fermerPanneauPrecorrection);
             precorrectionOverlay.addEventListener('click', function(e) {
                 if (e.target === precorrectionOverlay) {
@@ -1006,7 +1165,6 @@ Exemple :
                 }
             });
             
-            // Lancement de la précorrection IA
             lancerPrecorrection.addEventListener('click', async function() {
                 const copieTexte = document.getElementById('copieEleveText').value.trim();
                 
@@ -1019,119 +1177,20 @@ Exemple :
             });
             
             btnPropositionCommentaire.addEventListener('click', function() {
-                // Effet de pression visuel
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = 'scale(1)';
                 }, 150);
-                // TODO: Ajouter la fonctionnalité de proposition de commentaire
                 console.log('Bouton Proposition commentaire cliqué - fonctionnalité à implémenter');
             });
             
             btnAmeliorationCommentaire.addEventListener('click', function() {
-                // Effet de pression visuel
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = 'scale(1)';
                 }, 150);
-                // TODO: Ajouter la fonctionnalité d'amélioration de commentaire
                 console.log('Bouton Amélioration commentaire cliqué - fonctionnalité à implémenter');
             });
-        }
-
-        async function chargerEleves() {
-            try {
-                const eleves = await new Promise((resolve, reject) => {
-                    google.script.run
-                        .withSuccessHandler(resolve)
-                        .withFailureHandler(reject)
-                        .getEleves();
-                });
-                
-                elevesData = eleves;
-                
-                const datalist = document.getElementById('elevesList');
-                datalist.innerHTML = '';
-                
-                eleves.forEach(eleve => {
-                    const option = document.createElement('option');
-                    option.value = eleve.nom;
-                    datalist.appendChild(option);
-                });
-                
-                console.log(`${eleves.length} élèves chargés dans le datalist`);
-            } catch (error) {
-                console.error('Erreur chargement élèves:', error);
-                throw error;
-            }
-        }
-
-        async function chargerTypesProduction() {
-            try {
-                const types = await new Promise((resolve, reject) => {
-                    google.script.run
-                        .withSuccessHandler(resolve)
-                        .withFailureHandler(reject)
-                        .getTypesProduction();
-                });
-                
-                const select = document.getElementById('productionSelect');
-                select.innerHTML = '<option value="">Sélectionner un type</option>';
-                
-                types.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type;
-                    option.textContent = type;
-                    select.appendChild(option);
-                });
-                
-                console.log(`${types.length} types de production chargés`);
-            } catch (error) {
-                console.error('Erreur chargement types:', error);
-                throw error;
-            }
-        }
-
-        // 🚀 BONUS: Fonction ultra-optimisée pour charger tout en un coup
-        async function chargerToutEnUnCoup() {
-            try {
-                const donnees = await new Promise((resolve, reject) => {
-                    google.script.run
-                        .withSuccessHandler(resolve)
-                        .withFailureHandler(reject)
-                        .getElevesEtTypes(); // Nouvelle fonction backend !
-                });
-                
-                if (donnees.success) {
-                    // 1. Charger les types de production
-                    const select = document.getElementById('productionSelect');
-                    select.innerHTML = '<option value="">Sélectionner un type</option>';
-                    donnees.typesProduction.forEach(type => {
-                        const option = document.createElement('option');
-                        option.value = type;
-                        option.textContent = type;
-                        select.appendChild(option);
-                    });
-                    
-                    // 2. Charger les élèves
-                    elevesData = donnees.eleves;
-                    const datalist = document.getElementById('elevesList');
-                    datalist.innerHTML = '';
-                    donnees.eleves.forEach(eleve => {
-                        const option = document.createElement('option');
-                        option.value = eleve.nom;
-                        datalist.appendChild(option);
-                    });
-                    
-                    console.log(`✅ ULTRA-RAPIDE: ${donnees.eleves.length} élèves + ${donnees.typesProduction.length} types chargés en 1 appel !`);
-                    return true;
-                } else {
-                    throw new Error(donnees.error || 'Échec du chargement groupé');
-                }
-            } catch (error) {
-                console.error('Erreur chargement groupé:', error);
-                throw error;
-            }
         }
 
         async function chargerGrilleCorrection() {
@@ -1169,6 +1228,17 @@ Exemple :
             corrections = {};
             
             grilleData.criteres.forEach((critere, critereIndex) => {
+                // ✅ DEBUG pour les critères problématiques
+                if (critereIndex === 6 || critereIndex === 9) {
+                    console.log(`🔍 DEBUG GRILLE - Critère ${critereIndex} (${critere.nom}):`);
+                    console.log(`📋 Indicateurs reçus:`, critere.indicateurs);
+                    critere.indicateurs.forEach((indicateur, index) => {
+                        const isEmpty = !indicateur || indicateur.toString().trim() === '';
+                        console.log(`  Index ${index}: "${indicateur}" ${isEmpty ? '(VIDE)' : ''}`);
+                    });
+                    console.log(`📊 Points maximum: ${critere.points}`);
+                }
+                
                 const critereCard = document.createElement('div');
                 critereCard.className = 'critere-card';
                 
@@ -1190,24 +1260,34 @@ Exemple :
                 
                 const pourcentagesParColonne = [0, 15, 35, 60, 80, 100];
                 
+                
                 critere.indicateurs.forEach((indicateur, indicateurIndex) => {
-                    if (indicateur && indicateur.toString().trim() !== '') {
-                        const btn = document.createElement('button');
-                        btn.className = 'indicateur-btn';
-                        btn.textContent = indicateur.toString().trim();
-                        
-                        const pourcentage = pourcentagesParColonne[indicateurIndex] || 0;
-                        const pointsCalcules = (critere.points * pourcentage / 100);
-                        
-                        const niveaux = ['Néant', 'Très insuffisant', 'Insuffisant', 'Suffisant', 'Acquis', 'Parfaitement acquis'];
-                        const nomNiveau = niveaux[indicateurIndex] || 'Inconnu';
-                        
-                        btn.title = `${nomNiveau}: ${indicateur} (${pourcentage}% = ${pointsCalcules.toFixed(1)} pts)`;
-                        btn.onclick = () => selectionnerIndicateur(critereIndex, indicateurIndex, btn, critere.points, pourcentage, indicateur);
-                        
-                        indicateursGrid.appendChild(btn);
-                    }
-                });
+    if (indicateur && indicateur.toString().trim() !== '') {
+        const btn = document.createElement('button');
+        btn.className = 'indicateur-btn';
+        btn.textContent = indicateur.toString().trim();
+        
+        // ✅ DEBUG SPÉCIAL pour le critère ponctuation
+        if (critereIndex === 9) {
+            console.log(`🎯 CRÉATION Bouton ${indicateurIndex} pour critère 9: "${btn.textContent}"`);
+        }
+        
+        const pourcentage = pourcentagesParColonne[indicateurIndex] || 0;
+        const pointsCalcules = (critere.points * pourcentage / 100);
+        
+        const niveaux = ['Néant', 'Très insuffisant', 'Insuffisant', 'Suffisant', 'Acquis', 'Parfaitement acquis'];
+        const nomNiveau = niveaux[indicateurIndex] || 'Inconnu';
+        
+        btn.title = `${nomNiveau}: ${indicateur} (${pourcentage}% = ${pointsCalcules.toFixed(1)} pts)`;
+        btn.onclick = () => selectionnerIndicateur(critereIndex, indicateurIndex, btn, critere.points, pourcentage, indicateur);
+        
+        indicateursGrid.appendChild(btn);
+    }
+});
+                
+                
+                
+                
                 
                 critereCard.appendChild(header);
                 critereCard.appendChild(indicateursGrid);
@@ -1255,7 +1335,10 @@ Exemple :
                 // ✅ SÉLECTION NORMALE : Nouveau bouton cliqué
                 btn.classList.add('selected');
                 
-                if (pourcentage < 50) {
+                // ✅ CORRECTION : Logique de couleur cohérente basée sur l'INDEX
+                // Index 0,1,2 = Rouge (Néant, Très insuffisant, Insuffisant)  
+                // Index 3,4,5 = Vert (Suffisant, Acquis, Parfaitement acquis)
+                if (indicateurIndex < 3) {
                     btn.classList.add('niveau-faible');
                 } else {
                     btn.classList.add('niveau-bon');
@@ -1295,11 +1378,9 @@ Exemple :
             
             Object.values(corrections).forEach(correction => {
                 if (correction.selected !== null) {
-                    // Critère coté : ajouter les points obtenus ET le maximum de ce critère
                     pointsTotal += correction.points;
                     pointsMaxTotal += correction.pointsMax;
                 }
-                // Si pas coté (selected === null), on ignore complètement ce critère
             });
             
             const pointsFormate = pointsTotal.toFixed(1);
@@ -1361,10 +1442,7 @@ Exemple :
                 });
                 
                 if (result.success) {
-                    // ✅ Message persistant sous la grille
                     showSuccessPersistant(`${result.message}<br><a href="${result.url}" target="_blank" style="color: #1a73e8; text-decoration: none;">📄 Ouvrir le fichier de correction</a>`);
-                    
-                    // ✅ CHANGER LE BOUTON : Sauvegarder → Nouvelle correction
                     changerBoutonVersNouvelleCorrection();
                 } else {
                     showErrorPersistant(result.message || 'Erreur lors de l\'enregistrement');
@@ -1377,68 +1455,55 @@ Exemple :
             }
         }
 
-        // ✅ NOUVELLE FONCTION : Changer le bouton après sauvegarde
         function changerBoutonVersNouvelleCorrection() {
             const btnSauvegarder = document.getElementById('btnSauvegarder');
             btnSauvegarder.innerHTML = '🔄 Nouvelle correction';
             
-            // Effet visuel pour indiquer le changement
             btnSauvegarder.style.transform = 'scale(1.05)';
             setTimeout(() => {
                 btnSauvegarder.style.transform = 'scale(1)';
             }, 300);
         }
 
-        // ✅ NOUVELLE FONCTION : Remettre le bouton en mode Sauvegarder
         function changerBoutonVersSauvegarder() {
             const btnSauvegarder = document.getElementById('btnSauvegarder');
             btnSauvegarder.innerHTML = '💾 Sauvegarder la correction';
         }
 
-        // ✅ NOUVELLE FONCTION : Réinitialisation complète
         function reinitialiserComplet() {
-            // Réinitialiser les inputs
             document.getElementById('eleveInput').value = '';
             document.getElementById('productionSelect').value = '';
             document.getElementById('commentairesGeneraux').value = '';
             
-            // Réinitialiser le panneau de précorrection
             document.getElementById('copieEleveText').value = '';
             fermerPanneauPrecorrection();
             masquerStatusPrecorrection();
             
             selectedEleve = '';
             
-            // Masquer les sections
             document.getElementById('grilleSection').style.display = 'none';
             document.getElementById('saveSection').style.display = 'none';
             
-            // Réinitialiser l'affichage du total
             document.getElementById('pointsTotalFixe').style.display = 'none';
             document.getElementById('pointsTotalValeur').textContent = '0';
             
-            // Réinitialiser les données
             grilleData = null;
             corrections = {};
             pointsTotal = 0;
             
-            // Nettoyer les messages
             document.getElementById('saveStatus').innerHTML = '';
             document.getElementById('saveStatus').className = 'save-status';
             
-            // ✅ REMETTRE LE BOUTON EN MODE SAUVEGARDE
             changerBoutonVersSauvegarder();
             
             showSuccessDiscret('🔄 Réinitialisation complète effectuée');
         }
 
-        // ✅ NOUVELLES FONCTIONS : Messages persistants
         function showSuccessPersistant(message) {
             const status = document.getElementById('saveStatus');
             status.className = 'save-status success';
             status.innerHTML = `✅ ${message}`;
             status.style.display = 'block';
-            // Pas de setTimeout = message persistant !
         }
 
         function showErrorPersistant(message) {
@@ -1446,11 +1511,6 @@ Exemple :
             status.className = 'save-status error';
             status.innerHTML = `❌ ${message}`;
             status.style.display = 'block';
-            // Pas de setTimeout = message persistant !
-        }
-
-        function autoSauvegarde() {
-            // Cette fonction est maintenant vide car on n'utilise plus les brouillons
         }
 
         function showLoading(show) {
@@ -1465,7 +1525,7 @@ Exemple :
             setTimeout(() => {
                 status.innerHTML = '';
                 status.className = 'save-status';
-            }, 5000);
+            }, 8000);
         }
 
         function showSuccess(message) {
@@ -1487,17 +1547,12 @@ Exemple :
             status.innerHTML = message;
             status.style.display = 'block';
             
-            // Disparaît après 3 secondes (plus discret)
             setTimeout(() => {
                 status.innerHTML = '';
                 status.className = 'save-status';
                 status.style.display = originalDisplay;
             }, 3000);
         }
-
-        // ===================================
-        // FONCTIONS DE PRÉCORRECTION IA
-        // ===================================
 
         function ouvrirPanneauPrecorrection() {
             const overlay = document.getElementById('precorrectionOverlay');
@@ -1506,7 +1561,6 @@ Exemple :
             overlay.classList.add('active');
             panel.classList.add('active');
             
-            // Focus sur le textarea
             setTimeout(() => {
                 document.getElementById('copieEleveText').focus();
             }, 400);
@@ -1539,13 +1593,11 @@ Exemple :
             const typeProduction = document.getElementById('productionSelect').value;
             
             try {
-                // Désactiver le bouton et afficher le status
                 btnLancer.disabled = true;
                 afficherStatusPrecorrection('🤖 L\'IA analyse la copie...', 'loading');
                 
                 console.log('Envoi de la copie à l\'IA pour précorrection...');
                 
-                // Appel vers Google Apps Script
                 const resultatIA = await new Promise((resolve, reject) => {
                     google.script.run
                         .withSuccessHandler(resolve)
@@ -1556,15 +1608,12 @@ Exemple :
                 if (resultatIA.success) {
                     afficherStatusPrecorrection('✅ Précorrection terminée ! Application en cours...', 'success');
                     
-                    // Appliquer les corrections à la grille
                     appliquerCorrectionsIA(resultatIA.corrections);
                     
-                    // Appliquer le commentaire final
                     if (resultatIA.commentaire_final) {
                         document.getElementById('commentairesGeneraux').value = resultatIA.commentaire_final;
                     }
                     
-                    // Fermer le panneau après 2 secondes
                     setTimeout(() => {
                         fermerPanneauPrecorrection();
                         showSuccessDiscret('🤖 Précorrection IA appliquée avec succès !');
@@ -1578,86 +1627,211 @@ Exemple :
                 console.error('Erreur précorrection IA:', error);
                 afficherStatusPrecorrection('❌ Erreur de communication avec l\'IA', 'error');
             } finally {
-                // Réactiver le bouton
                 btnLancer.disabled = false;
             }
         }
 
         function appliquerCorrectionsIA(correctionsIA) {
-            console.log('Application des corrections IA:', correctionsIA);
+    console.log('🤖 DÉBUT Application des corrections IA:', correctionsIA);
+    
+    // Réinitialiser les corrections actuelles
+    Object.keys(corrections).forEach(critereIndex => {
+        corrections[critereIndex] = {
+            selected: null,
+            indicateur: '',
+            points: 0,
+            pointsMax: corrections[critereIndex].pointsMax
+        };
+    });
+    
+    // ✅ NOUVELLE LOGIQUE : Appliquer chaque correction de l'IA
+    Object.keys(correctionsIA).forEach(critereIndex => {
+        const correctionIA = correctionsIA[critereIndex];
+        const critere = grilleData.criteres[parseInt(critereIndex)];
+        
+        console.log(`🔍 TRAITEMENT Critère ${critereIndex}:`, correctionIA);
+        
+        if (critere && correctionIA.indicateur) {
+            console.log(`📝 Critère ${critereIndex} - Indicateur IA: "${correctionIA.indicateur}"`);
+            console.log(`📝 Critère ${critereIndex} - Pourcentage IA: ${correctionIA.pourcentage}%`);
             
-            // Réinitialiser les corrections actuelles
-            Object.keys(corrections).forEach(critereIndex => {
-                corrections[critereIndex] = {
-                    selected: null,
-                    indicateur: '',
-                    points: 0,
-                    pointsMax: corrections[critereIndex].pointsMax
-                };
-            });
+            // Trouver l'indicateur correspondant - RECHERCHE PLUS ROBUSTE
+            let indicateurIndex = -1;
+            const indicateurRecherche = correctionIA.indicateur.toString().trim();
             
-            // Appliquer chaque correction de l'IA
-            Object.keys(correctionsIA).forEach(critereIndex => {
-                const correctionIA = correctionsIA[critereIndex];
-                const critere = grilleData.criteres[parseInt(critereIndex)];
+            console.log(`🔎 Recherche de: "${indicateurRecherche}"`);
+            console.log(`🔎 Dans les indicateurs:`, critere.indicateurs);
+            
+            for (let i = 0; i < critere.indicateurs.length; i++) {
+                const indicateurGrille = critere.indicateurs[i];
+                console.log(`🔎 Comparaison ${i}: "${indicateurGrille}" VS "${indicateurRecherche}"`);
+                if (indicateurGrille && indicateurGrille.toString().trim() === indicateurRecherche) {
+                    indicateurIndex = i;
+                    break;
+                }
+            }
+            
+            console.log(`✅ Indicateur "${indicateurRecherche}" trouvé à l'index:`, indicateurIndex);
+            
+            if (indicateurIndex !== -1) {
+                // ✅ CALCUL COHÉRENT des pourcentages - IGNORER COMPLÈTEMENT le pourcentage IA
+                const pourcentagesParColonne = [0, 15, 35, 60, 80, 100];
+                const pourcentageCorrect = pourcentagesParColonne[indicateurIndex] || 0;
+                const pointsObtenus = (critere.points * pourcentageCorrect / 100);
                 
-                if (critere && correctionIA.indicateur) {
-                    // Trouver l'indicateur correspondant
-                    const indicateurIndex = critere.indicateurs.findIndex(ind => 
-                        ind && ind.toString().trim() === correctionIA.indicateur.toString().trim()
-                    );
+                console.log(`🔍 DEBUG Critère ${critereIndex}:`);
+                console.log(`- Index trouvé: ${indicateurIndex}`);
+                console.log(`- Pourcentage IA reçu: ${correctionIA.pourcentage}% (IGNORÉ)`);
+                console.log(`- Pourcentage FORCÉ selon index ${indicateurIndex}: ${pourcentageCorrect}%`);
+                console.log(`- Points FORCÉS: ${pointsObtenus.toFixed(1)}/${critere.points}`);
+                
+                // ✅ FORCER l'affichage dans l'interface aussi
+                if (critereIndex == "9") { // Critère ponctuation spécifiquement
+                    console.log(`🚨 PONCTUATION - Indicateur: "${correctionIA.indicateur}"`);
+                    console.log(`🚨 PONCTUATION - Index: ${indicateurIndex}`);
+                    console.log(`🚨 PONCTUATION - Points FORCÉS: ${pointsObtenus.toFixed(1)} (au lieu de 1.8)`);
+                    console.log(`🚨 PONCTUATION - Couleur: ${indicateurIndex < 3 ? 'ROUGE' : 'VERT'}`);
+                }
+                
+                // Mettre à jour les corrections
+                corrections[critereIndex] = {
+                    selected: indicateurIndex,
+                    indicateur: correctionIA.indicateur,
+                    points: pointsObtenus,
+                    pointsMax: critere.points,
+                    pourcentage: pourcentageCorrect, // ✅ Utiliser le pourcentage CORRECT basé sur l'index
+                    justificationIA: correctionIA.justification
+                };
+                
+                // ✅ MISE À JOUR VISUELLE COMPLÈTE
+                const critereCard = document.querySelector(`#score-${critereIndex}`);
+                if (critereCard) {
+                    const critereContainer = critereCard.closest('.critere-card');
                     
-                    if (indicateurIndex !== -1) {
-                        // Calculer les points selon le pourcentage
-                        const pointsObtenus = (critere.points * correctionIA.pourcentage / 100);
+                    if (critereContainer) {
+                        // 1. Désélectionner tous les boutons
+                        critereContainer.querySelectorAll('.indicateur-btn').forEach(btn => {
+                            btn.classList.remove('selected', 'niveau-faible', 'niveau-bon');
+                        });
                         
-                        // Mettre à jour les corrections
-                        corrections[critereIndex] = {
-                            selected: indicateurIndex,
-                            indicateur: correctionIA.indicateur,
-                            points: pointsObtenus,
-                            pointsMax: critere.points,
-                            pourcentage: correctionIA.pourcentage,
-                            justificationIA: correctionIA.justification
-                        };
+                        // 2. Trouver et sélectionner le bon bouton avec MAPPING CORRIGÉ
+                        const indicateurBtns = critereContainer.querySelectorAll('.indicateur-btn');
                         
-                        // Mettre à jour visuellement la grille
-                        const critereCard = document.querySelector(`#score-${critereIndex}`).closest('.critere-card');
-                        if (critereCard) {
-                            // Désélectionner tous les boutons de ce critère
-                            critereCard.querySelectorAll('.indicateur-btn').forEach(btn => {
-                                btn.classList.remove('selected', 'niveau-faible', 'niveau-bon');
-                            });
+                        // ✅ NOUVEAU : Créer un mapping entre index grille et position bouton
+                        let indexVersPosition = {};
+                        let positionVersIndex = {};
+                        let positionBouton = 0;
+                        
+                        // Parcourir les indicateurs de la grille pour créer le mapping
+                        critere.indicateurs.forEach((indicateur, indexGrille) => {
+                            if (indicateur && indicateur.toString().trim() !== '') {
+                                indexVersPosition[indexGrille] = positionBouton;
+                                positionVersIndex[positionBouton] = indexGrille;
+                                positionBouton++;
+                            }
+                        });
+                        
+                        console.log(`🗺️ MAPPING Critère ${critereIndex}:`, indexVersPosition);
+                        console.log(`🗺️ Position du bouton pour index ${indicateurIndex}:`, indexVersPosition[indicateurIndex]);
+                        
+                        // ✅ Utiliser le mapping pour trouver la bonne position
+                        const positionBoutonCible = indexVersPosition[indicateurIndex];
+                        
+                        if (typeof positionBoutonCible !== 'undefined' && indicateurBtns[positionBoutonCible]) {
+                            const btn = indicateurBtns[positionBoutonCible];
                             
-                            // Sélectionner le bon bouton
-                            const indicateurBtns = critereCard.querySelectorAll('.indicateur-btn');
-                            if (indicateurBtns[indicateurIndex]) {
-                                const btn = indicateurBtns[indicateurIndex];
-                                btn.classList.add('selected');
+                            console.log(`🎯 SÉLECTION: Index grille ${indicateurIndex} → Position bouton ${positionBoutonCible}`);
+                            console.log(`🎯 Texte du bouton sélectionné: "${btn.textContent}"`);
+                            
+                            // ✅ APPLIQUER LA SÉLECTION
+                            btn.classList.add('selected');
+                            
+                            // ✅ LOGIQUE DE COULEUR basée sur l'INDEX DE LA GRILLE
+                            if (indicateurIndex < 3) {
+                                btn.classList.add('niveau-faible'); // Rouge : 0,1,2
+                                console.log(`🔴 Critère ${critereIndex} - ROUGE (index grille ${indicateurIndex})`);
+                            } else {
+                                btn.classList.add('niveau-bon');    // Vert : 3,4,5
+                                console.log(`🟢 Critère ${critereIndex} - VERT (index grille ${indicateurIndex})`);
+                            }
+                            
+                            // Ajouter la justification en tooltip
+                            const tooltipOriginal = btn.title || '';
+                            btn.title = `${tooltipOriginal}\n\n🤖 IA: ${correctionIA.justification}`;
+                            
+                            console.log(`✅ Bouton position ${positionBoutonCible} (index grille ${indicateurIndex}) mis à jour visuellement pour critère ${critereIndex}`);
+                            
+                            // ✅ DEBUG SPÉCIAL pour la ponctuation
+                            if (critereIndex == "9") {
+                                console.log(`🔍 VÉRIFICATION FINALE PONCTUATION (CORRIGÉE):`);
+                                indicateurBtns.forEach((btnVerif, position) => {
+                                    const indexGrilleCorrespondant = positionVersIndex[position];
+                                    const isSelected = btnVerif.classList.contains('selected');
+                                    const color = btnVerif.classList.contains('niveau-faible') ? 'ROUGE' : 
+                                                 btnVerif.classList.contains('niveau-bon') ? 'VERT' : 'AUCUNE';
+                                    console.log(`  Position ${position} (index grille ${indexGrilleCorrespondant}): "${btnVerif.textContent}" - Sélectionné: ${isSelected} - Couleur: ${color}`);
+                                });
+                            }
+                            
+                        } else {
+                            // ✅ GESTION d'erreur avec fallback
+                            console.error(`❌ Position bouton introuvable pour l'index grille ${indicateurIndex} du critère ${critereIndex}`);
+                            console.log(`🔍 Mapping disponible:`, indexVersPosition);
+                            console.log(`🔍 Nombre de boutons disponibles: ${indicateurBtns.length}`);
+                            console.log(`🔍 Index demandé: ${indicateurIndex}`);
+                            
+                            // ✅ FALLBACK : Utiliser le dernier bouton disponible
+                            if (indicateurBtns.length > 0) {
+                                const dernierPosition = indicateurBtns.length - 1;
+                                const btn = indicateurBtns[dernierPosition];
+                                const dernierIndexGrille = positionVersIndex[dernierPosition];
                                 
-                                if (correctionIA.pourcentage < 50) {
+                                console.log(`🔧 FALLBACK: Utilisation position ${dernierPosition} (index grille ${dernierIndexGrille}) au lieu de index grille ${indicateurIndex}`);
+                                
+                                btn.classList.add('selected');
+                                if (dernierIndexGrille < 3) {
                                     btn.classList.add('niveau-faible');
                                 } else {
                                     btn.classList.add('niveau-bon');
                                 }
                                 
-                                // Ajouter la justification en tooltip
-                                btn.title = `${btn.title}\n\n🤖 IA: ${correctionIA.justification}`;
+                                // Mettre à jour les corrections avec l'index corrigé
+                                corrections[critereIndex].selected = dernierIndexGrille;
+                                
+                                // Recalculer les points avec le bon pourcentage
+                                const pourcentagesParColonne = [0, 15, 35, 60, 80, 100];
+                                const nouveauPourcentage = pourcentagesParColonne[dernierIndexGrille] || 0;
+                                const nouveauxPoints = (critere.points * nouveauPourcentage / 100);
+                                corrections[critereIndex].points = nouveauxPoints;
+                                corrections[critereIndex].pourcentage = nouveauPourcentage;
+                                
+                                console.log(`🔧 Points recalculés: ${nouveauxPoints.toFixed(1)}/${critere.points}`);
                             }
-                            
-                            // Mettre à jour le score affiché
-                            const scoreIndicator = document.getElementById(`score-${critereIndex}`);
-                            scoreIndicator.textContent = `${pointsObtenus.toFixed(1)}/${critere.points}`;
+                        }
+                        
+                        // 3. Mettre à jour le score affiché
+                        const scoreIndicator = document.getElementById(`score-${critereIndex}`);
+                        if (scoreIndicator) {
+                            scoreIndicator.textContent = `${corrections[critereIndex].points.toFixed(1)}/${critere.points}`;
                             scoreIndicator.classList.remove('empty');
+                            console.log(`📊 Score mis à jour pour critère ${critereIndex}: ${corrections[critereIndex].points.toFixed(1)}/${critere.points}`);
                         }
                     }
                 }
-            });
-            
-            // Mettre à jour le total
-            mettreAJourPointsTotal();
+            } else {
+                console.error(`❌ Indicateur IA non trouvé: "${indicateurRecherche}" pour le critère ${critereIndex}`);
+                console.log('Indicateurs disponibles:', critere.indicateurs);
+            }
         }
+    });
+    
+    // Mettre à jour le total
+    mettreAJourPointsTotal();
+    
+    console.log('✅ Application des corrections IA terminée');
+}
 
+        // Raccourcis clavier
         document.addEventListener('keydown', function(event) {
             if (event.ctrlKey && event.key === 's') {
                 event.preventDefault();
@@ -1670,10 +1844,10 @@ Exemple :
             
             if (event.key === 'Escape') {
                 if (confirm('Voulez-vous réinitialiser la correction en cours ?')) {
-                    reinitialiserCorrection();
+                    reinitialiserComplet();
                 }
             }
         });
-    </script>
+</script>
 </body>
 </html>
