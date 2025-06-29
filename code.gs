@@ -238,7 +238,7 @@ function enregistrerCorrection(nomEleve, typeProduction, corrections, pointsTota
     const emailEleve = getEmailEleve(nomEleve);
     if (emailEleve && emailEleve.includes('@')) {
       try {
-        nouveauSheet.addEditor(emailEleve);
+        nouveauSheet.addViewer(emailEleve);
         console.log(`Sheet partagé avec: ${emailEleve}`);
       } catch (emailError) {
         console.warn(`Impossible de partager avec ${emailEleve}:`, emailError);
